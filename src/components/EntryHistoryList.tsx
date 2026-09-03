@@ -146,7 +146,7 @@ export const EntryHistoryList: React.FC<EntryHistoryListProps> = ({
                   </p>
                 )}
 
-                <div className="flex items-center gap-2 mt-2 pt-1 border-t border-[#27272A]/80 text-[10px] text-zinc-400">
+                <div className="flex items-center gap-1.5 mt-2 pt-1 border-t border-[#27272A]/80 text-[10px] text-zinc-400 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {new Date(entry.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
@@ -158,6 +158,11 @@ export const EntryHistoryList: React.FC<EntryHistoryListProps> = ({
                   <span className="px-1.5 py-0.2 rounded bg-zinc-800 border border-zinc-700/50 text-zinc-300 font-medium">
                     {entry.category}
                   </span>
+                  {entry.emotionalResonance?.primaryTone && (
+                    <span className="px-1.5 py-0.2 rounded bg-emerald-950/60 border border-emerald-800/50 text-emerald-400 font-medium truncate max-w-[120px]">
+                      {entry.emotionalResonance.primaryTone}
+                    </span>
+                  )}
                 </div>
               </div>
             );

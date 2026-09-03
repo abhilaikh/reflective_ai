@@ -1,3 +1,28 @@
+export interface CognitiveBiasDimension {
+  name: string;
+  score: number; // 0 to 100
+  description?: string;
+}
+
+export interface CognitiveRadarData {
+  dimensions: CognitiveBiasDimension[];
+  dominantPattern?: string;
+  reframeInsight?: string;
+}
+
+export interface EmotionalMetric {
+  trait: string; // 'Clarity', 'Calm', 'Optimism', 'Agency'
+  score: number; // 0 to 100
+}
+
+export interface EmotionalResonanceData {
+  primaryTone: string;
+  energyLevel: 'Low' | 'Moderate' | 'Elevated' | 'High';
+  valenceScore: number; // 0 to 100
+  metrics: EmotionalMetric[];
+  resonanceNote?: string;
+}
+
 export interface JournalTurn {
   id: string;
   role: 'user' | 'model';
@@ -16,6 +41,8 @@ export interface JournalEntry {
   summary?: string;
   keyInsights?: string[];
   suggestedPrompts?: string[];
+  cognitiveRadar?: CognitiveRadarData;
+  emotionalResonance?: EmotionalResonanceData;
   createdAt: number;
   updatedAt: number;
 }
@@ -39,5 +66,7 @@ export interface GeminiReflectResponse {
   summary?: string;
   keyInsights?: string[];
   suggestedPrompts?: string[];
+  cognitiveRadar?: CognitiveRadarData;
+  emotionalResonance?: EmotionalResonanceData;
   modelUsed?: string;
 }

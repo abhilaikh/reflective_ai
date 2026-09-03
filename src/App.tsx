@@ -260,6 +260,8 @@ export default function App() {
         summary: data.summary || entryWithUserTurn.summary,
         keyInsights: data.keyInsights && data.keyInsights.length > 0 ? data.keyInsights : entryWithUserTurn.keyInsights,
         suggestedPrompts: data.suggestedPrompts && data.suggestedPrompts.length > 0 ? data.suggestedPrompts : entryWithUserTurn.suggestedPrompts,
+        cognitiveRadar: data.cognitiveRadar || entryWithUserTurn.cognitiveRadar,
+        emotionalResonance: data.emotionalResonance || entryWithUserTurn.emotionalResonance,
         updatedAt: Date.now(),
       };
 

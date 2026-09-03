@@ -92,23 +92,64 @@ app.post('/api/gemini/reflect', async (req: Request, res: Response) => {
     }
 
     // Prepare system instruction based on journal category and purpose
-    const systemInstruction = `You are an empathetic, insightful, and constructive AI Reflection & Journal Assistant.
-Your purpose is to help the user reflect deeply, brainstorm solutions, organize thoughts, and identify growth opportunities.
+    const systemInstruction = `You are an empathetic, insightful, and psychologically grounded AI Reflection & Journal Assistant.
+Your purpose is to help the user reflect deeply, identify unconscious cognitive habits/biases, track emotional resonance, brainstorm solutions, and cultivate self-awareness.
 Current Journal Context:
 - Entry Title: "${entryTitle}"
 - Category: "${category}"
 
 Guidelines:
-1. Provide a warm, thoughtful, and analytical response ("reply") directly addressing the user's reflection or brainstorming request.
-2. Formulate a brief, crisp 1-sentence summary of the user's situation or realization ("summary").
-3. Extract 2 to 4 actionable insights, mindsets, or key realizations ("keyInsights").
+1. Provide a warm, thoughtful, and analytical response ("reply") directly addressing the user's reflection or inquiry.
+2. Formulate a crisp 1-2 sentence summary of the core reflection ("summary").
+3. Extract 2 to 4 actionable insights or key realizations ("keyInsights").
 4. Provide 2 or 3 provocative, open-ended questions to deepen the user's reflection ("suggestedPrompts").
-5. Return the result strictly in valid JSON format matching this schema:
+5. Perform a Cognitive Bias & Blind-Spot analysis ("cognitiveRadar"):
+   - Evaluate these 6 cognitive dimensions on a 0-100 scale (where 0 means absent, 100 means heavy presence):
+     - "All-or-Nothing" (Black & white thinking)
+     - "Catastrophizing" (Assuming the worst outcome)
+     - "Control Fallacy" (Assuming total blame or complete helplessness)
+     - "Confirmation Bias" (Filtering out positive/alternative evidence)
+     - "Emotional Reasoning" (Assuming feelings dictate reality)
+     - "Rigid Demands" ("Should" or "Must" imperatives)
+   - Identify the "dominantPattern" (e.g. "Rigid Demands" or "Balanced Inquiry").
+   - Provide a constructive, compassionate "reframeInsight" suggesting a healthier perspective.
+6. Perform an Emotional Resonance analysis ("emotionalResonance"):
+   - "primaryTone": e.g., "Reflective & Grounded", "Apprehensive but Curious", "Energized & Motivated".
+   - "energyLevel": One of "Low", "Moderate", "Elevated", "High".
+   - "valenceScore": 0-100 score indicating overall emotional positivity/clarity.
+   - "metrics": array of 4 objects for traits "Clarity", "Calm", "Optimism", "Agency", each with score 0-100.
+   - "resonanceNote": 1-2 sentence guidance for emotional balance and positive forward momentum.
+
+Return the result strictly in valid JSON format matching this schema:
 {
   "reply": "string (Markdown supported)",
   "summary": "string",
   "keyInsights": ["string"],
-  "suggestedPrompts": ["string"]
+  "suggestedPrompts": ["string"],
+  "cognitiveRadar": {
+    "dimensions": [
+      { "name": "All-or-Nothing", "score": number, "description": "string" },
+      { "name": "Catastrophizing", "score": number, "description": "string" },
+      { "name": "Control Fallacy", "score": number, "description": "string" },
+      { "name": "Confirmation Bias", "score": number, "description": "string" },
+      { "name": "Emotional Reasoning", "score": number, "description": "string" },
+      { "name": "Rigid Demands", "score": number, "description": "string" }
+    ],
+    "dominantPattern": "string",
+    "reframeInsight": "string"
+  },
+  "emotionalResonance": {
+    "primaryTone": "string",
+    "energyLevel": "Low" | "Moderate" | "Elevated" | "High",
+    "valenceScore": number,
+    "metrics": [
+      { "trait": "Clarity", "score": number },
+      { "trait": "Calm", "score": number },
+      { "trait": "Optimism", "score": number },
+      { "trait": "Agency", "score": number }
+    ],
+    "resonanceNote": "string"
+  }
 }`;
 
     // Format conversation history for multi-turn dialogue
@@ -143,16 +184,90 @@ Guidelines:
       parsedResponse = {
         reply: result.text,
         summary: prompt.slice(0, 100) + '...',
-        keyInsights: ['Continued personal inquiry'],
-        suggestedPrompts: ['What feelings arise as you reflect on this?', 'What is the very next action you want to take?'],
+        keyInsights: ['Continued personal inquiry and thoughtful reflection'],
+        suggestedPrompts: [
+          'What underlying assumption might you test next?',
+          'What feelings arise as you reflect on this?',
+        ],
       };
     }
+
+    // Defensive fallback defaults for cognitiveRadar
+    const defaultCognitiveDimensions = [
+      { name: 'All-or-Nothing', score: 20, description: 'Tendency to see situations in polarized absolutes' },
+      { name: 'Catastrophizing', score: 15, description: 'Anticipating worst-case scenarios disproportionately' },
+      { name: 'Control Fallacy', score: 25, description: 'Assuming disproportionate responsibility or helplessness' },
+      { name: 'Confirmation Bias', score: 20, description: 'Fixating on thoughts supporting current perspective' },
+      { name: 'Emotional Reasoning', score: 30, description: 'Interpreting emotional feelings as objective reality' },
+      { name: 'Rigid Demands', score: 25, description: 'Applying rigid should/must expectations to yourself' },
+    ];
+
+    const cognitiveRadar = (parsedResponse.cognitiveRadar && typeof parsedResponse.cognitiveRadar === 'object')
+      ? {
+          dimensions: Array.isArray(parsedResponse.cognitiveRadar.dimensions) && parsedResponse.cognitiveRadar.dimensions.length > 0
+            ? parsedResponse.cognitiveRadar.dimensions.map((d: any) => ({
+                name: typeof d.name === 'string' ? d.name : 'Dimension',
+                score: typeof d.score === 'number' ? Math.max(0, Math.min(100, Math.round(d.score))) : 20,
+                description: typeof d.description === 'string' ? d.description : '',
+              }))
+            : defaultCognitiveDimensions,
+          dominantPattern: typeof parsedResponse.cognitiveRadar.dominantPattern === 'string'
+            ? parsedResponse.cognitiveRadar.dominantPattern
+            : 'Balanced Inquiry',
+          reframeInsight: typeof parsedResponse.cognitiveRadar.reframeInsight === 'string'
+            ? parsedResponse.cognitiveRadar.reframeInsight
+            : 'Consider testing these reflections against multiple alternative hypotheses to retain mental flexibility.',
+        }
+      : {
+          dimensions: defaultCognitiveDimensions,
+          dominantPattern: 'Balanced Inquiry',
+          reframeInsight: 'Keep observing your thought loops with gentle curiosity rather than judgment.',
+        };
+
+    // Defensive fallback defaults for emotionalResonance
+    const defaultEmotionalMetrics = [
+      { trait: 'Clarity', score: 65 },
+      { trait: 'Calm', score: 60 },
+      { trait: 'Optimism', score: 70 },
+      { trait: 'Agency', score: 75 },
+    ];
+
+    const emotionalResonance = (parsedResponse.emotionalResonance && typeof parsedResponse.emotionalResonance === 'object')
+      ? {
+          primaryTone: typeof parsedResponse.emotionalResonance.primaryTone === 'string'
+            ? parsedResponse.emotionalResonance.primaryTone
+            : 'Reflective & Grounded',
+          energyLevel: ['Low', 'Moderate', 'Elevated', 'High'].includes(parsedResponse.emotionalResonance.energyLevel)
+            ? parsedResponse.emotionalResonance.energyLevel
+            : 'Moderate',
+          valenceScore: typeof parsedResponse.emotionalResonance.valenceScore === 'number'
+            ? Math.max(0, Math.min(100, Math.round(parsedResponse.emotionalResonance.valenceScore)))
+            : 65,
+          metrics: Array.isArray(parsedResponse.emotionalResonance.metrics) && parsedResponse.emotionalResonance.metrics.length > 0
+            ? parsedResponse.emotionalResonance.metrics.map((m: any) => ({
+                trait: typeof m.trait === 'string' ? m.trait : 'Trait',
+                score: typeof m.score === 'number' ? Math.max(0, Math.min(100, Math.round(m.score))) : 60,
+              }))
+            : defaultEmotionalMetrics,
+          resonanceNote: typeof parsedResponse.emotionalResonance.resonanceNote === 'string'
+            ? parsedResponse.emotionalResonance.resonanceNote
+            : 'Acknowledging your current emotional state is the foundational first step to unlocking agency.',
+        }
+      : {
+          primaryTone: 'Reflective & Grounded',
+          energyLevel: 'Moderate' as const,
+          valenceScore: 65,
+          metrics: defaultEmotionalMetrics,
+          resonanceNote: 'Continue writing to deepen your emotional clarity and ground your intentions.',
+        };
 
     return res.json({
       reply: parsedResponse.reply || result.text,
       summary: parsedResponse.summary || '',
       keyInsights: Array.isArray(parsedResponse.keyInsights) ? parsedResponse.keyInsights : [],
       suggestedPrompts: Array.isArray(parsedResponse.suggestedPrompts) ? parsedResponse.suggestedPrompts : [],
+      cognitiveRadar,
+      emotionalResonance,
       modelUsed: result.modelUsed,
     });
   } catch (error: any) {
